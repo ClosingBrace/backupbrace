@@ -19,5 +19,27 @@ Files that did not change between the last backup and the current run,
 are left alone. The hardlink will stay intact.
 """
 
+import os
+from datetime import datetime
+
+class Environment:
+    """The operating environment of the program.
+
+    An Environment object contains information about the operating
+    environment.
+
+    Attributes:
+        conf_file (str): The configuration file for the program.
+    """
+
+    def __init__(self):
+        """Default constructor.
+
+        This sets the information that is maintained in an Environment
+        object.
+        """
+        self.conf_file = "/etc/backupbrace.conf"
+
+
 if __name__ == "__main__":
-    pass
+    env = Environment()
