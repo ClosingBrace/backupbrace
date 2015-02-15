@@ -29,7 +29,9 @@ supported are:
 PROGRAM_VERSION = "0.1"
 
 import argparse
+import json
 import os
+import sys
 from datetime import datetime
 
 class BackupError(Exception):
@@ -86,5 +88,109 @@ class Environment:
         parser.parse_args(namespace=self)
 
 
+class Configuration:
+    """Configuration for the backup program.
+
+    The configuration is read from a json-configuration file. This
+    configuration file is versioned. The program currently only supports
+    configuration files in the version 1.0 format.
+
+    The configuration file formats are:
+
+    version 1.0:
+        The configuration is one unnamed object. This object has the
+        following members:
+        - version: The configuration's version-string: `1.0`.
+        - backup-dir: The base directory where the backups will go. This
+          directory must exist prior to the execution of the backup
+          program.
+        - backup-sets: An array of backup sets.
+
+        The backup sets are objects with the following members:
+        - set-name: A string identifying the backup set.
+        - source-dir: The directory to backup.
+        - skip-entries: (optional) An array of directory and file names
+          that are to be skipped during backup.
+
+        Each backup set will be backed up to the directory
+        `<backup-dir>/<timestamp>/<set-name>`, where the timestamp is
+        fixed the moment the program started. Directories and files in
+        skip-entries will be excluded from the backup, indepent from
+        where they appear below the source-dir.
+
+    Attributes:
+        version_major (str): The major part of the configuration's
+                             version.
+        version_minor (str): The minor part of the configuration's
+                             version.
+        """
+
+    def __init__(self, conf_file):
+        """Constructor that takes the path to the configuration file as
+        argument.
+
+        The configuration is loaded from the json configuration file at
+        `conf_file`.
+
+        Args:
+            conf_file (str): Path to the configuration file.
+
+        Raises:
+            BackupError: When the configuration file does not exist or
+                         could otherwise not be opened, or when the
+                         configuration file could not be parsed.
+        """
+        try:
+            with open(conf_file, "r") as fp:
+                self._configuration = json.load(fp)
+            self._extract_version()
+        except IOError as err:
+            raise BackupError(
+                    "Could not open configuration file '{0}' ({1})".format(
+                        err.filename, err.strerror))
+        except ValueError as err:
+            raise BackupError("Could not parse configuration ({0})".
+                    format(err))
+
+    def get_param(self, key):
+        """Get the parameter `key` from the configuration.
+
+        Args:
+            key (str): The key to retrieve.
+
+        Returns:
+            The value corresponding to `key`.
+
+        Raises:
+            KeyError: When `key` does not exist in the configuration.
+        """
+        return self._configuration[key]
+
+    def _extract_version(self):
+        """Extract the version from the configuration into the
+        attributes version_major and version_minor.
+
+        Raises:
+            BackupError: When the configuration does not have a version
+                         parameter, or when the version parameter could
+                         not be split into two separate strings.
+        """
+        try:
+            version = self._configuration["version"]
+            self.version_major, self.version_minor = version.split(".")
+        except KeyError as err:
+            raise BackupError("Missing configuration parameter '{0}'".format(
+                err.args[0]))
+        except ValueError as err:
+            raise BackupError(
+                    "Error parsing configuration's version string ({0})".
+                    format(err))
+
+
 if __name__ == "__main__":
     env = Environment()
+    try:
+        conf = Configuration(env.conffile)
+    except BackupError as e:
+        print("Error: " + e.__str__())
+        sys.exit(1)
