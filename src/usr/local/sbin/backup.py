@@ -32,6 +32,26 @@ import argparse
 import os
 from datetime import datetime
 
+class BackupError(Exception):
+    """Base exception for the backup program.
+
+    This exception is raised when an error occurs in the backup program.
+    It may be derived for more specific errors.
+    """
+
+    def __init__(self, reason):
+        """Constructor that takes the reason for the error as argument.
+
+        Args:
+            reason (str): The reason for raising the error.
+        """
+        self._reason = reason
+
+    def __str__(self):
+        """String representation of the error."""
+        return self._reason
+
+
 class Environment:
     """The operating environment of the program.
 
