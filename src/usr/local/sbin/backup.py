@@ -55,6 +55,19 @@ class BackupError(Exception):
         return self._reason
 
 
+class TimestampEncoder(json.JSONEncoder):
+    """Custom JSON encoder that encodes datetime objects as their
+    ISO-8601 string.
+    """
+
+    def default(self, obj):
+        """Encoding function.
+        """
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return json.JSONEncoder.default(self, obj)
+
+
 class Environment:
     """The operating environment of the program.
 
@@ -242,6 +255,46 @@ class Configuration:
             they appear below the source directory."""))
 
 
+class Backup:
+    """A single backup.
+
+    A backup consists of one or more backup sets.
+    """
+
+    # The name of the file in which the backup's state is stored.
+    _STATE_FILE = "backup.state"
+
+    def __init__(self, directory):
+        """Constructor that creates a new backup in `directory`. The
+        backup directory must not yet exist.
+
+        Args:
+            directory (str): The backup directory.
+        """
+        self.timestamp = datetime.now().replace(microsecond=0)
+        self._sets = []
+        self._backup_dir = directory
+        try:
+            os.mkdir(directory)
+            self._save_state()
+        except OSError:
+            raise BackupError("Backup directory '{0}' already exists".
+                    format(directory))
+
+    def _save_state(self):
+        """Save the backup's state.
+
+        The backup's state consists of the time it was created and all
+        backup sets with their state. The state is save in a file in the
+        backup directory.
+        """
+        sets = {set_.name: set_.state.name for set_ in self._sets}
+        state_file = os.path.join(self._backup_dir, Backup._STATE_FILE)
+        with open(state_file, "w") as fp:
+            json.dump({"timestamp": self.timestamp, "sets": sets}, fp, indent=4,
+                    cls=TimestampEncoder)
+
+
 class BackupManager:
     """A manager that manages all the backups in a single base
     directory.
@@ -272,6 +325,28 @@ class BackupManager:
                     format(directory))
         self._backups = []
 
+    def new_backup(self, directory=None):
+        """Create a new backup.
+
+        The backup is created as a subdirectory of the managers
+        directory. This subdirectory is given by the `directory`
+        argument. If `directory` is None, the current system time is
+        used to create an ISO timestamp string, which is used for the
+        directory name.
+
+        Args:
+            directory (str): The subdirectory in which the backup will
+                             be created, or None.
+
+        Returns:
+            The newly created backup.
+        """
+        if directory is None:
+            directory = datetime.now().replace(microsecond=0).isoformat()
+        backup = Backup(os.path.join(self._directory, directory))
+        self._backups.append(backup)
+        return backup
+
 
 if __name__ == "__main__":
     env = Environment()
@@ -281,6 +356,7 @@ if __name__ == "__main__":
     try:
         conf = Configuration(env.conffile)
         manager = BackupManager(conf.get_param("backup-dir"))
+        backup = manager.new_backup()
     except BackupError as e:
         print("Error: " + e.__str__())
         sys.exit(1)
