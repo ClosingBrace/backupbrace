@@ -242,6 +242,37 @@ class Configuration:
             they appear below the source directory."""))
 
 
+class BackupManager:
+    """A manager that manages all the backups in a single base
+    directory.
+
+    A backup is located in a directory that is made up of a base
+    directory and a timestamp as subdirectory. All the backups in a
+    single base directory are managed by the same BackupManager.
+    """
+
+    def __init__(self, directory):
+        """Constructor that takes the base directory as argument.
+
+        All backups under the base directory will be managed by this
+        instance of the BackupManager. It is an error when the
+        `directory` refers to a non-existent directory.
+
+        Args:
+            directory (str): The base directory of the backups that will
+                             managed.
+
+        Raises:
+            BackupError: When the base directory does not exist.
+        """
+        self._directory = directory
+        if not os.path.isdir(directory):
+            raise BackupError(
+                    "Cannot manage backups in non-existent directory '{0}'".
+                    format(directory))
+        self._backups = []
+
+
 if __name__ == "__main__":
     env = Environment()
     if (env.conf_format):
@@ -249,6 +280,7 @@ if __name__ == "__main__":
         sys.exit(0)
     try:
         conf = Configuration(env.conffile)
+        manager = BackupManager(conf.get_param("backup-dir"))
     except BackupError as e:
         print("Error: " + e.__str__())
         sys.exit(1)
