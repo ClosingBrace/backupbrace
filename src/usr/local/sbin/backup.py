@@ -34,6 +34,7 @@ import os
 import sys
 import textwrap
 from datetime import datetime
+from enum import Enum
 
 class BackupError(Exception):
     """Base exception for the backup program.
@@ -255,6 +256,83 @@ class Configuration:
             they appear below the source directory."""))
 
 
+class BackupSet:
+    """A backup of a single directory tree.
+
+    A backup set is created by cloning the previous backup set for the
+    same directory and then synchronizing the cloned directory tree with
+    the source directory. When cloning the previous backup, hard links
+    are used for the files to avoid unnecessary disk use. To synchronize
+    the backup directory with the source directory the rsync-program/
+    -protocol is used.
+
+    Attributes:
+        name (str)    : The set's name.
+        state (States): The set's state.
+    """
+
+    class States(Enum):
+        """Enumeration for the states of a backup set.
+
+        The states are:
+            CONFIGURED
+            CLONING
+            CLONED
+            SYNCHRONIZING
+            FINISHED
+        """
+
+        def __ge__(self, other):
+            """The >=-operator."""
+            if self.__class__ is other.__class__:
+                return self.value >= other.value
+            return NotImplemented
+
+        def __gt__(self, other):
+            """The >-operator."""
+            if self.__class__ is other.__class__:
+                return self.value > other.value
+            return NotImplemented
+
+        def __le__(self, other):
+            """The <=-operator."""
+            if self.__class__ is other.__class__:
+                return self.value <= other.value
+            return NotImplemented
+
+        def __lt__(self, other):
+            """The <-operator."""
+            if self.__class__ is other.__class__:
+                return self.value < other.value
+            return NotImplemented
+
+        CONFIGURED = 0
+        CLONING = 1
+        CLONED = 2
+        SYNCHRONIZING = 3
+        FINISHED = 4
+
+    def __init__(self, name, src_dir, dst_dir, skip_entries,
+            state=States.CONFIGURED):
+        """Constructor that creates a new backup set.
+
+        Args:
+            name (str)         : The set's name.
+            src_dir (str)      : The directory to backup.
+            dst_dir (str)      : The directory where the backup set will
+                                 be created.
+            skip_entries (list): A list of directory and file names that
+                                 are to be skipped during backup.
+            state              : The initial state that the backup set
+                                 is in.
+        """
+        self.name = name
+        self.state = state
+        self._src_dir = src_dir
+        self._dst_dir = dst_dir
+        self._skip_entries = skip_entries
+
+
 class Backup:
     """A single backup.
 
@@ -280,6 +358,20 @@ class Backup:
         except OSError:
             raise BackupError("Backup directory '{0}' already exists".
                     format(directory))
+
+    def add_set(self, name, src_dir, skip_entries):
+        """Add a backup set to the backup.
+
+        Args:
+            name (str)         : The set's name.
+            src_dir (str)      : The directory to backup.
+            skip_entries (list): A list of directory and file names that
+                                 are to be skipped during backup.
+        """
+        self._sets.append(
+                BackupSet(name, src_dir,
+                    os.path.join(self._backup_dir, name), skip_entries))
+        self._save_state()
 
     def _save_state(self):
         """Save the backup's state.
@@ -357,6 +449,14 @@ if __name__ == "__main__":
         conf = Configuration(env.conffile)
         manager = BackupManager(conf.get_param("backup-dir"))
         backup = manager.new_backup()
+        for backup_set in conf.get_param("backup-sets"):
+            name = backup_set["set-name"]
+            src_dir = backup_set["source-dir"]
+            if "skip-entries" in backup_set:
+                skip_entries = backup_set["skip-entries"]
+            else:
+                skip_entries = None
+            backup.add_set(name, src_dir, skip_entries)
     except BackupError as e:
         print("Error: " + e.__str__())
         sys.exit(1)
