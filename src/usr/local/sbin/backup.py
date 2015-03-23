@@ -340,9 +340,15 @@ class BackupSet:
         SYNCHRONIZING = 3
         FINISHED = 4
 
-    def __init__(self, name, src_dir, dst_dir, skip_entries,
+    def __init__(self, name=None, src_dir=None, dst_dir=None, skip_entries=None,
             state=States.CONFIGURED):
-        """Constructor that creates a new backup set.
+        """Constructor that creates a backup set. When the backup set is
+        created for a new backup, `name`, `src_dir` and `dst_dir` must
+        be supplied. `skip_entries` should also be supplied if there are
+        entries in the `src_dir` that are to be skipped. When the backup
+        set is created for an existing backup, only `name` and `state`
+        have to be supplied. In this case the backup set is used
+        read-only.
 
         Args:
             name (str)         : The set's name.
