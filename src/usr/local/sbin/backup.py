@@ -306,6 +306,34 @@ class BackupSet:
                 return self.value < other.value
             return NotImplemented
 
+        @classmethod
+        def from_string(cls, name):
+            """Return the enum member given a string with its name.
+
+            Args:
+                name (str): The enum member's name.
+
+            Returns:
+                The state as an enum menber.
+
+            Raises:
+                ValueError: When the name does not correspond to a
+                            member.
+            """
+            if name == BackupSet.States.CONFIGURED.name:
+                return BackupSet.States.CONFIGURED
+            elif name == BackupSet.States.CLONING.name:
+                return BackupSet.States.CLONING
+            elif name == BackupSet.States.CLONED.name:
+                return BackupSet.States.CLONED
+            elif name == BackupSet.States.SYNCHRONIZING.name:
+                return BackupSet.States.SYNCHRONIZING
+            elif name == BackupSet.States.FINISHED.name:
+                return BackupSet.States.FINISHED
+            else:
+                raise ValueError("Illegal name ({0}) for enumeration 'States'".
+                        format(name))
+
         CONFIGURED = 0
         CLONING = 1
         CLONED = 2
