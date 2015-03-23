@@ -514,6 +514,7 @@ class BackupManager:
                     "Cannot manage backups in non-existent directory '{0}'".
                     format(directory))
         self._backups = []
+        self._load_backups()
 
     def new_backup(self, directory=None):
         """Create a new backup.
@@ -536,6 +537,19 @@ class BackupManager:
         backup = Backup(os.path.join(self._directory, directory))
         self._backups.append(backup)
         return backup
+
+    def _load_backups(self):
+        """Load the existing backups under the base directory.
+        """
+        backup_dirs = [d for d in os.listdir(self._directory)
+                if os.path.isdir(os.path.join(self._directory, d))]
+        for dir_ in backup_dirs:
+            try:
+                self._backups.append(Backup.open(os.path.join(self._directory,
+                    dir_)))
+            except BackupError:
+                # skip directory when it is not a backup
+                pass
 
 
 if __name__ == "__main__":
