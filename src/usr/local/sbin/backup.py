@@ -33,6 +33,7 @@ import json
 import os
 import sys
 import textwrap
+import dateutil.parser
 from datetime import datetime
 from enum import Enum
 
@@ -67,6 +68,29 @@ class TimestampEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return json.JSONEncoder.default(self, obj)
+
+
+def decode_state_json(dct):
+    """Object hook for decoding the saved state from JSON. In the JSON
+    file, the timestamp is a string. This is converted to a datetime
+    object. Also in the JSON file, the backup sets' states are strings.
+    These are converted to instances of the BackupSet.States
+    enumeration.
+
+    Args:
+        dct: The dictionary as decoded by the default decoder.
+
+    Returns:
+        A dictionary with the timestamp as a datetime object and the
+        sets using the state enumeration.
+    """
+    if 'timestamp' in dct:
+        dct['timestamp'] = dateutil.parser.parse(dct['timestamp'])
+    if 'sets' in dct:
+        sets = dct['sets']
+        dct['sets'] = {key : BackupSet.States.from_string(sets[key])
+                for key in sets}
+    return dct
 
 
 class Environment:
@@ -376,22 +400,52 @@ class Backup:
     # The name of the file in which the backup's state is stored.
     _STATE_FILE = "backup.state"
 
-    def __init__(self, directory):
-        """Constructor that creates a new backup in `directory`. The
-        backup directory must not yet exist.
+    def __init__(self, directory, new=True):
+        """Constructor that opens or creates a backup in `directory`.
+        When a backup is created the backup directory must not yet
+        exist, while when an existing backup is opened it must exist.
 
         Args:
             directory (str): The backup directory.
+            new (boolean)  : True when this creates a new backup.
+
+        Raises:
+            BackupError: When the backup directory already exists and
+                         new is True, or when the backup directory does
+                         not exist and new is False.
         """
         self.timestamp = datetime.now().replace(microsecond=0)
         self._sets = []
         self._backup_dir = directory
-        try:
-            os.mkdir(directory)
-            self._save_state()
-        except OSError:
-            raise BackupError("Backup directory '{0}' already exists".
-                    format(directory))
+        if new == True:
+            try:
+                os.mkdir(directory)
+                self._save_state()
+            except OSError:
+                raise BackupError("Backup directory '{0}' already exists".
+                        format(directory))
+        else:
+            try:
+                self._load_state()
+            except OSError:
+                raise BackupError("Backup directory '{0}' does not exist".
+                        format(directory))
+
+    @classmethod
+    def open(cls, directory):
+        """Open the backup at `directory`. The state file in `directory`
+        is read and used to set the timestamp and backup sets of the
+        backup. A backup that is opened can only be used to read
+        information from about when the backup was made and what sets
+        were included in the backup and in what state these sets are.
+
+        Args:
+            directory (str): The backup directory.
+
+        Returns:
+            An opened backup.
+        """
+        return Backup(directory, new=False)
 
     def add_set(self, name, src_dir, skip_entries):
         """Add a backup set to the backup.
@@ -419,6 +473,16 @@ class Backup:
         with open(state_file, "w") as fp:
             json.dump({"timestamp": self.timestamp, "sets": sets}, fp, indent=4,
                     cls=TimestampEncoder)
+
+    def _load_state(self):
+        """Load the backup's state.
+        """
+        state_file = os.path.join(self._backup_dir, Backup._STATE_FILE)
+        with open(state_file, "r") as fp:
+            backup_state = json.load(fp, object_hook=decode_state_json)
+            self._sets = [BackupSet(name, state=backup_state['sets'][name])
+                    for name in backup_state['sets']]
+            self.timestamp = backup_state['timestamp']
 
 
 class BackupManager:
