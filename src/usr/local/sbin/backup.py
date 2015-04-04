@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import sys
+import textwrap
 from datetime import datetime
 
 class BackupError(Exception):
@@ -81,6 +82,8 @@ class Environment:
         """
         parser = argparse.ArgumentParser(
                 description="Make a backup of the system.")
+        parser.add_argument("-f", "--conf-format", action="store_true",
+                help="show help about the configuration file format and exit")
         parser.add_argument("-v", "--version", action="version",
                 version="%(prog)s v" + PROGRAM_VERSION)
         parser.add_argument("-c", "--config", dest="conffile",
@@ -94,29 +97,6 @@ class Configuration:
     The configuration is read from a json-configuration file. This
     configuration file is versioned. The program currently only supports
     configuration files in the version 1.0 format.
-
-    The configuration file formats are:
-
-    version 1.0:
-        The configuration is one unnamed object. This object has the
-        following members:
-        - version: The configuration's version-string: `1.0`.
-        - backup-dir: The base directory where the backups will go. This
-          directory must exist prior to the execution of the backup
-          program.
-        - backup-sets: An array of backup sets.
-
-        The backup sets are objects with the following members:
-        - set-name: A string identifying the backup set.
-        - source-dir: The directory to backup.
-        - skip-entries: (optional) An array of directory and file names
-          that are to be skipped during backup.
-
-        Each backup set will be backed up to the directory
-        `<backup-dir>/<timestamp>/<set-name>`, where the timestamp is
-        fixed the moment the program started. Directories and files in
-        skip-entries will be excluded from the backup, indepent from
-        where they appear below the source-dir.
 
     Attributes:
         version_major (str): The major part of the configuration's
@@ -186,9 +166,72 @@ class Configuration:
                     "Error parsing configuration's version string ({0})".
                     format(err))
 
+    @classmethod
+    def print_configuration_format(cls):
+        """Print the configuration file format.
+        """
+        print(textwrap.dedent("""\
+            The configuration for the backup program is stored in a JSON-file.
+            The file is versioned. This version of the program uses version
+            1.0 of the configuration file. It is also compatible with any other
+            1.x version of the configuration file.
+
+            Version 1.0 supports only the backup of local files and directories
+            to a local backup directory.
+
+            A sample version 1.0 configuration file looks as follows:
+
+                {
+                   "version": "1.0",
+                   "backup-dir": "/path/to/backup/dir",
+                   "backup-sets": [
+                      {
+                         "set-name": "set_1",
+                         "source-dir": "/path/to/source_1",
+                         "skip-entries": [
+                            "entry_1",
+                            "entry_2",
+                            "entry_3"
+                         ]
+                      },
+                      {
+                         "set-name": "set_2",
+                         "source-dir": "/path/to/source_2"
+                      },
+                   ]
+                }
+
+            The configuration is contained in a single, unnamed JSON object. The
+            object contains the following name/value pairs:
+            - `version`    : The string "1.0".
+            - `backup-dir` : A string that contains the base directory where the
+                             backups will go. This directory must exist prior to
+                             the execution of the backup program.
+            - `backup-sets`: An array of backup sets.
+
+            The backup sets are objects that contain the following name/value
+            pairs:
+            - `set-name`    : A string identifying the backup set. This set name
+                              will be used to create a subdirectory in
+                              `backup-dir`.
+            - `source-dir`  : A string with the absolute path to the directory
+                              to backup.
+            - `skip-entries`: (optional) An array of strings that are directory
+                              and file names which are to be skipped during
+                              backup.
+
+            Each backup set will be backed up to the directory
+            `backup-dir`/<timestamp>/`set-name`, where the timestamp is fixed
+            the moment the program started. Directories and files in
+            `skip-entries` will be excluded from the backup, indepent from where
+            they appear below the source directory."""))
+
 
 if __name__ == "__main__":
     env = Environment()
+    if (env.conf_format):
+        Configuration.print_configuration_format()
+        sys.exit(0)
     try:
         conf = Configuration(env.conffile)
     except BackupError as e:
