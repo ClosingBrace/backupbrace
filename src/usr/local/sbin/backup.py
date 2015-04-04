@@ -124,6 +124,7 @@ class Configuration:
             with open(conf_file, "r") as fp:
                 self._configuration = json.load(fp)
             self._extract_version()
+            self._check_version()
         except IOError as err:
             raise BackupError(
                     "Could not open configuration file '{0}' ({1})".format(
@@ -165,6 +166,20 @@ class Configuration:
             raise BackupError(
                     "Error parsing configuration's version string ({0})".
                     format(err))
+
+    def _check_version(self):
+        """Check if the configuration format version is supported.
+
+        Raises:
+            BackupError: When the configuration format version is not
+                         supported.
+        """
+        if (int(self.version_major) == 1) and (int(self.version_minor) >= 0):
+            # We have a supported version
+            return
+        raise BackupError("Configuration file format not supported. Found "
+                "version {0}, only supporting versions 1.x".
+                format(self._configuration["version"]))
 
     @classmethod
     def print_configuration_format(cls):
