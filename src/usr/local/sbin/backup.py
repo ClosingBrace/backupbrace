@@ -461,6 +461,24 @@ class Backup:
                     os.path.join(self._backup_dir, name), skip_entries))
         self._save_state()
 
+    def find_set_location(self, set_name, states):
+        """Find the location of the backup set with the name `set_name`
+        and a state that is in `states`.
+
+        Args:
+            set_name (str): The name of the backup set to search for.
+            states (list) : A list of states (from BackupSet.States).
+
+        Returns:
+            The location (directory) of the set or None when there is no
+            set with `set_name` in one of the states in `states`.
+        """
+        set_list = [ b for b in self._sets
+                if b.name == set_name and b.state in states]
+        if set_list:
+            return os.path.join(self._backup_dir, set_name)
+        return None
+
     def _save_state(self):
         """Save the backup's state.
 
@@ -537,6 +555,28 @@ class BackupManager:
         backup = Backup(os.path.join(self._directory, directory))
         self._backups.append(backup)
         return backup
+
+    def find_latest_set(self, set_name, states):
+        """Find the latest backup set with a state that is in `states`.
+
+        Args:
+            set_name (str): The name of the backup set to search for.
+            states (list) : A list of states (from BackupSet.States).
+
+        Returns:
+            The location (directory) of the latest set or None when
+            there is no set with `set_name` in one of the states in
+            `states`.
+        """
+        latest_location = None
+        latest_timestamp = datetime.min
+        for backup in self._backups:
+            location = backup.find_set_location(set_name, states)
+            if location is not None:
+                if backup.timestamp > latest_timestamp:
+                    latest_timestamp = backup.timestamp
+                    latest_location = location
+        return latest_location
 
     def _load_backups(self):
         """Load the existing backups under the base directory.
