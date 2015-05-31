@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 import textwrap
 import dateutil.parser
@@ -466,6 +467,25 @@ class BackupSet:
         """
         clone_tree(src, self._dst_dir)
 
+    def do_backup(self):
+        """Make the backup by synchronizing the backup directory with
+        the filesystem.
+        """
+        rsync_cmd_list = ["rsync", "-aAXh", "--delete", "--delete-excluded",
+                "--numeric-ids"]
+        if self._skip_entries is not None:
+            rsync_cmd_list.extend(["--exclude=" + f for f in
+                self._skip_entries])
+        rsync_cmd_list.append(self._src_dir + "/")
+        rsync_cmd_list.append(self._dst_dir)
+        with subprocess.Popen(rsync_cmd_list, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, universal_newlines=True) as rsync_cmd:
+            while True:
+                out_data = rsync_cmd.stdout.readline()
+                if out_data == '':
+                    break;
+                # TODO log rsync output
+
 
 class Backup:
     """A single backup.
@@ -576,7 +596,11 @@ class Backup:
                 backup_set.clone(copy_src)
                 backup_set.state = BackupSet.States.CLONED
                 self._save_state()
-            # TODO Sync with source dir
+            backup_set.state = BackupSet.States.SYNCHRONIZING
+            self._save_state()
+            backup_set.do_backup()
+            backup_set.state = BackupSet.States.FINISHED
+            self._save_state()
 
     def _save_state(self):
         """Save the backup's state.
