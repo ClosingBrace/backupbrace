@@ -458,6 +458,14 @@ class BackupSet:
         self._dst_dir = dst_dir
         self._skip_entries = skip_entries
 
+    def clone(self, src):
+        """Clone the last successfull backup of this set.
+
+        Args:
+            src (str): The directory of the last successfull backup.
+        """
+        clone_tree(src, self._dst_dir)
+
 
 class Backup:
     """A single backup.
@@ -546,6 +554,29 @@ class Backup:
         if set_list:
             return os.path.join(self._backup_dir, set_name)
         return None
+
+    def create(self, copy_source_finder):
+        """Create the backup. For each backup set, copy it from the last
+        successfull backup set and then synchronize it with the
+        filesystem.
+
+        Args:
+            copy_source_finder (fnc): Function to find the backup set to
+                                      copy from. The function takes two
+                                      arguments: a set name and a list
+                                      of states that the set must be in.
+        """
+        for backup_set in self._sets:
+            copy_src = copy_source_finder(backup_set.name,
+                    [BackupSet.States.CLONED, BackupSet.States.SYNCHRONIZING,
+                        BackupSet.States.FINISHED])
+            if copy_src is not None:
+                backup_set.state = BackupSet.States.CLONING
+                self._save_state()
+                backup_set.clone(copy_src)
+                backup_set.state = BackupSet.States.CLONED
+                self._save_state()
+            # TODO Sync with source dir
 
     def _save_state(self):
         """Save the backup's state.
@@ -677,6 +708,7 @@ if __name__ == "__main__":
             else:
                 skip_entries = None
             backup.add_set(name, src_dir, skip_entries)
+        backup.create(manager.find_latest_set)
     except BackupError as e:
         print("Error: " + e.__str__())
         sys.exit(1)
