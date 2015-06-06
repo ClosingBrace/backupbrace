@@ -30,6 +30,7 @@ PROGRAM_VERSION = "0.1"
 
 import argparse
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -465,6 +466,7 @@ class BackupSet:
         Args:
             src (str): The directory of the last successfull backup.
         """
+        logging.info("Cloning backup set '{0}' from {1}".format(self.name, src))
         clone_tree(src, self._dst_dir)
 
     def do_backup(self):
@@ -472,19 +474,24 @@ class BackupSet:
         the filesystem.
         """
         rsync_cmd_list = ["rsync", "-aAXh", "--delete", "--delete-excluded",
-                "--numeric-ids"]
+                "--numeric-ids", "--outbuf=Line", "--stats",
+                "--itemize-changes"]
         if self._skip_entries is not None:
             rsync_cmd_list.extend(["--exclude=" + f for f in
                 self._skip_entries])
         rsync_cmd_list.append(self._src_dir + "/")
         rsync_cmd_list.append(self._dst_dir)
+        logging.info("Making backup of set '{0}'".format(self.name))
+        logging.info("")
         with subprocess.Popen(rsync_cmd_list, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT, universal_newlines=True) as rsync_cmd:
             while True:
                 out_data = rsync_cmd.stdout.readline()
                 if out_data == '':
                     break;
-                # TODO log rsync output
+                logging.info(out_data.strip())
+        logging.info("")
+        logging.info("Finished backup of set '{0}'".format(self.name))
 
 
 class Backup:
@@ -517,6 +524,11 @@ class Backup:
             try:
                 os.mkdir(directory)
                 self._save_state()
+                logging.basicConfig(filename="{0}/backup.log".format(directory),
+                        format="%(asctime)s %(levelname)s: %(message)s",
+                        level=logging.INFO)
+                logging.info("Backup started")
+                logging.info("")
             except OSError:
                 raise BackupError("Backup directory '{0}' already exists".
                         format(directory))
@@ -556,6 +568,7 @@ class Backup:
                 BackupSet(name, src_dir,
                     os.path.join(self._backup_dir, name), skip_entries))
         self._save_state()
+        logging.info("Backup set '{0}' added".format(name))
 
     def find_set_location(self, set_name, states):
         """Find the location of the backup set with the name `set_name`
@@ -586,6 +599,7 @@ class Backup:
                                       arguments: a set name and a list
                                       of states that the set must be in.
         """
+        logging.info("")
         for backup_set in self._sets:
             copy_src = copy_source_finder(backup_set.name,
                     [BackupSet.States.CLONED, BackupSet.States.SYNCHRONIZING,
@@ -734,5 +748,6 @@ if __name__ == "__main__":
             backup.add_set(name, src_dir, skip_entries)
         backup.create(manager.find_latest_set)
     except BackupError as e:
-        print("Error: " + e.__str__())
+        logging.error("Backup incomplete due to error:")
+        logging.error("  {0}".format(e))
         sys.exit(1)
