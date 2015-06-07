@@ -26,7 +26,7 @@ supported are:
                       the backup's configuration file
 """
 
-PROGRAM_VERSION = "0.1"
+PROGRAM_VERSION = "0.2"
 
 import argparse
 import json
