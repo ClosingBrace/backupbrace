@@ -669,6 +669,26 @@ class Backup:
         self._save_state()
         logging.info("Backup set '{0}' added".format(name))
 
+    def add_remote_dir_set(self, name, src_dir, host, shell, skip_entries):
+        """Add a backup set for a remote directory tree to the backup.
+
+        Args:
+            name (str)         : The set's name.
+            src_dir (str)      : The directory to backup.
+            host (str)         : The host containing the directory to
+                                 backup.
+            shell (str)        : The command to log in to a shell on
+                                 host.
+            skip_entries (list): A list of directory and file names that
+                                 are to be skipped during backup.
+        """
+        self._sets.append(
+                RemoteDirBackupSet(name, src_dir,
+                    os.path.join(self._backup_dir, name), host, shell,
+                    skip_entries))
+        self._save_state()
+        logging.info("Backup set '{0}' added".format(name))
+
     def find_set_location(self, set_name, states):
         """Find the location of the backup set with the name `set_name`
         and a state that is in `states`.
