@@ -203,8 +203,8 @@ class Configuration:
     """Configuration for the backup program.
 
     The configuration is read from a json-configuration file. This
-    configuration file is versioned. The program currently only supports
-    configuration files in the version 1.0 format.
+    configuration file is versioned. The program only supports
+    configuration files in the version 2.0 format.
 
     Attributes:
         version_major (str): The major part of the configuration's
