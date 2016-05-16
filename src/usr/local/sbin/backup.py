@@ -758,13 +758,14 @@ if __name__ == "__main__":
         manager = BackupManager(conf.get_param("backup-dir"))
         backup = manager.new_backup()
         for backup_set in conf.get_param("backup-sets"):
-            name = backup_set["set-name"]
-            src_dir = backup_set["source-dir"]
-            if "skip-entries" in backup_set:
-                skip_entries = backup_set["skip-entries"]
-            else:
-                skip_entries = None
-            backup.add_set(name, src_dir, skip_entries)
+            if (backup_set["type"] == "local dir"):
+                name = backup_set["set-name"]
+                src_dir = backup_set["source-dir"]
+                if "skip-entries" in backup_set:
+                    skip_entries = backup_set["skip-entries"]
+                else:
+                    skip_entries = None
+                backup.add_set(name, src_dir, skip_entries)
         backup.create(manager.find_latest_set)
     except BackupError as e:
         logging.error("Backup incomplete due to error:")
