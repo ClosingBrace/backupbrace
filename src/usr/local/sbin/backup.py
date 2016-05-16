@@ -542,6 +542,57 @@ class LocalDirBackupSet(BackupSet):
         self.execute_command(rsync_cmd_list)
 
 
+class RemoteDirBackupSet(BackupSet):
+    """A backup of a single remote directory tree.
+
+    The backup set is created by cloning the previous backup set for the
+    same remote directory and then synchronizing the cloned directory
+    tree with the remote source directory. When cloning the previous
+    backup, hard links are used for the files to avoid unnecessary disk
+    use. To synchronize the backup directory with the source directory
+    the rsync-program/-protocol is used.
+    """
+
+    def __init__(self, name, src_dir, dst_dir, remote_host, remote_shell,
+            skip_entries=None, state=BackupSet.States.CONFIGURED):
+        """Constructor that creates a new backup set.
+
+        Args:
+            name (str)         : The set's name.
+            src_dir (str)      : The directory to backup.
+            dst_dir (str)      : The directory where the backup set will
+                                 be created.
+            remote_host (str)  : The host containing the files to
+                                 backup.
+            remote_shell (str) : The command used to log in to a shell
+                                 on the remote host (e.g. "ssh -l user).
+            skip_entries (list): A list of directory and file names that
+                                 are to be skipped during backup.
+            state              : The initial state that the backup set
+                                 is in.
+        """
+        super().__init__(name, dst_dir, state)
+        self._src_dir = src_dir
+        self._remote_host = remote_host
+        self._remote_shell = remote_shell
+        self._skip_entries = skip_entries
+
+    def do_backup(self):
+        """Make the backup by synchronizing the backup directory with
+        the filesystem.
+        """
+        rsync_cmd_list = ["rsync", "-aAXhzs", "--delete", "--delete-excluded",
+                "--numeric-ids", "--outbuf=Line", "--stats",
+                "--itemize-changes"]
+        rsync_cmd_list.append("-e" + self._remote_shell)
+        if self._skip_entries is not None:
+            rsync_cmd_list.extend(["--exclude=" + f for f in
+                self._skip_entries])
+        rsync_cmd_list.append(self._remote_host + ":" + self._src_dir + "/")
+        rsync_cmd_list.append(self._dst_dir)
+        self.execute_command(rsync_cmd_list)
+
+
 class Backup:
     """A single backup.
 
