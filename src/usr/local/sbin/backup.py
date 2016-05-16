@@ -370,14 +370,12 @@ class Configuration:
 
 
 class BackupSet:
-    """A backup of a single directory tree.
+    """Base for a backup of a single backup item.
 
     A backup set is created by cloning the previous backup set for the
-    same directory and then synchronizing the cloned directory tree with
-    the source directory. When cloning the previous backup, hard links
-    are used for the files to avoid unnecessary disk use. To synchronize
-    the backup directory with the source directory the rsync-program/
-    -protocol is used.
+    same item and then updating the cloned backup set. When cloning the
+    previous backup set, hard links are used for the files to avoid
+    unnecessary disk use.
 
     Attributes:
         name (str)    : The set's name.
@@ -453,15 +451,48 @@ class BackupSet:
         SYNCHRONIZING = 3
         FINISHED = 4
 
-    def __init__(self, name=None, src_dir=None, dst_dir=None, skip_entries=None,
-            state=States.CONFIGURED):
+    def __init__(self, name, dst_dir=None, state=States.CONFIGURED):
         """Constructor that creates a backup set. When the backup set is
-        created for a new backup, `name`, `src_dir` and `dst_dir` must
-        be supplied. `skip_entries` should also be supplied if there are
-        entries in the `src_dir` that are to be skipped. When the backup
-        set is created for an existing backup, only `name` and `state`
-        have to be supplied. In this case the backup set is used
-        read-only.
+        created for a new backup, `name` and `dst_dir` must be supplied.
+        When the backup set is created for an existing backup, `name`
+        and `state` have to be supplied. In this case the backup set is
+        used read-only.
+
+        Args:
+            name (str)         : The set's name.
+            dst_dir (str)      : The directory where the backup set will
+                                 be created.
+            state              : The initial state that the backup set
+                                 is in.
+        """
+        self.name = name
+        self.state = state
+        self._dst_dir = dst_dir
+
+    def clone(self, src):
+        """Clone the last successfull backup of this set.
+
+        Args:
+            src (str): The directory of the last successfull backup.
+        """
+        logging.info("Cloning backup set '{0}' from {1}".format(self.name, src))
+        clone_tree(src, self._dst_dir)
+
+
+class LocalDirBackupSet(BackupSet):
+    """A backup set of a single local directory tree.
+
+    The backup set is created by cloning the previous backup set for the
+    same local directory and then synchronizing the cloned directory
+    tree with the local source directory. When cloning the previous
+    backup, hard links are used for the files to avoid unnecessary disk
+    use. To synchronize the backup directory with the source directory
+    the rsync-program/-protocol is used.
+    """
+
+    def __init__(self, name, src_dir, dst_dir, skip_entries=None,
+            state=BackupSet.States.CONFIGURED):
+        """Constructor that creates a new backup set.
 
         Args:
             name (str)         : The set's name.
@@ -473,20 +504,9 @@ class BackupSet:
             state              : The initial state that the backup set
                                  is in.
         """
-        self.name = name
-        self.state = state
+        super().__init__(name, dst_dir, state)
         self._src_dir = src_dir
-        self._dst_dir = dst_dir
         self._skip_entries = skip_entries
-
-    def clone(self, src):
-        """Clone the last successfull backup of this set.
-
-        Args:
-            src (str): The directory of the last successfull backup.
-        """
-        logging.info("Cloning backup set '{0}' from {1}".format(self.name, src))
-        clone_tree(src, self._dst_dir)
 
     def do_backup(self):
         """Make the backup by synchronizing the backup directory with
@@ -574,8 +594,8 @@ class Backup:
         """
         return Backup(directory, new=False)
 
-    def add_set(self, name, src_dir, skip_entries):
-        """Add a backup set to the backup.
+    def add_local_dir_set(self, name, src_dir, skip_entries):
+        """Add a backup set for a local directory tree to the backup.
 
         Args:
             name (str)         : The set's name.
@@ -584,7 +604,7 @@ class Backup:
                                  are to be skipped during backup.
         """
         self._sets.append(
-                BackupSet(name, src_dir,
+                LocalDirBackupSet(name, src_dir,
                     os.path.join(self._backup_dir, name), skip_entries))
         self._save_state()
         logging.info("Backup set '{0}' added".format(name))
@@ -765,7 +785,7 @@ if __name__ == "__main__":
                     skip_entries = backup_set["skip-entries"]
                 else:
                     skip_entries = None
-                backup.add_set(name, src_dir, skip_entries)
+                backup.add_local_dir_set(name, src_dir, skip_entries)
         backup.create(manager.find_latest_set)
     except BackupError as e:
         logging.error("Backup incomplete due to error:")
