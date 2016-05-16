@@ -282,11 +282,11 @@ class Configuration:
             BackupError: When the configuration format version is not
                          supported.
         """
-        if (int(self.version_major) == 1) and (int(self.version_minor) >= 0):
+        if (int(self.version_major) == 2) and (int(self.version_minor) >= 0):
             # We have a supported version
             return
         raise BackupError("Configuration file format not supported. Found "
-                "version {0}, only supporting versions 1.x".
+                "version {0}, only supporting versions 2.x".
                 format(self._configuration["version"]))
 
     @classmethod
