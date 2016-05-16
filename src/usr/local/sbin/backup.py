@@ -296,20 +296,21 @@ class Configuration:
         print(textwrap.dedent("""\
             The configuration for the backup program is stored in a JSON-file.
             The file is versioned. This version of the program uses version
-            1.0 of the configuration file. It is also compatible with any other
-            1.x version of the configuration file.
+            2.0 of the configuration file. It is also compatible with any other
+            2.x version of the configuration file.
 
-            Version 1.0 supports only the backup of local files and directories
-            to a local backup directory.
+            Version 2.0 supports the backup of local and remote files and
+            directories to a local backup directory.
 
-            A sample version 1.0 configuration file looks as follows:
+            A sample version 2.0 configuration file looks as follows:
 
                 {
-                   "version": "1.0",
+                   "version": "2.0",
                    "backup-dir": "/path/to/backup/dir",
                    "backup-sets": [
                       {
                          "set-name": "set_1",
+                         "type": "local dir"
                          "source-dir": "/path/to/source_1",
                          "skip-entries": [
                             "entry_1",
@@ -319,14 +320,22 @@ class Configuration:
                       },
                       {
                          "set-name": "set_2",
+                         "type": "local dir"
                          "source-dir": "/path/to/source_2"
                       },
+                      {
+                         "set-name": "set_3",
+                         "type": "remote dir"
+                         "remote-shell": "ssh -l user",
+                         "remote-host": "server_name",
+                         "source-dir": "/path/to/source_3"
+                      }
                    ]
                 }
 
             The configuration is contained in a single, unnamed JSON object. The
             object contains the following name/value pairs:
-            - `version`    : The string "1.0".
+            - `version`    : The string "2.0".
             - `backup-dir` : A string that contains the base directory where the
                              backups will go. This directory must exist prior to
                              the execution of the backup program.
@@ -337,6 +346,16 @@ class Configuration:
             - `set-name`    : A string identifying the backup set. This set name
                               will be used to create a subdirectory in
                               `backup-dir`.
+            - `type`        : The type of backup, either 'local dir' or
+                              'remote dir'.
+            - `remote-shell`: (only when `type` is 'remote dir') The remote
+                              shell to use for connecting with the remote host.
+                              The string includes the options that the remote
+                              shell needs to connect to the remote host.
+            - `remote-host` : (only when `type` is 'remote dir') The remote host
+                              to connect to. This can include a remote user
+                              (with the syntax <user>@<host>) that the remote
+                              rsync process will use to execute its task.
             - `source-dir`  : A string with the absolute path to the directory
                               to backup.
             - `skip-entries`: (optional) An array of strings that are directory
