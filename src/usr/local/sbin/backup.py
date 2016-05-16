@@ -478,6 +478,25 @@ class BackupSet:
         logging.info("Cloning backup set '{0}' from {1}".format(self.name, src))
         clone_tree(src, self._dst_dir)
 
+    def execute_command(self, command_list):
+        """Execute the supplied command to create the backup.
+
+        Args:
+            command_list (list): The command to execute, including its
+                                 parameters.
+        """
+        logging.info("Making backup of set '{0}'".format(self.name))
+        logging.info("")
+        with subprocess.Popen(command_list, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, universal_newlines=True) as command:
+            while True:
+                out_data = command.stdout.readline()
+                if out_data == '':
+                    break;
+                logging.info(out_data.strip())
+        logging.info("")
+        logging.info("Finished backup of set '{0}'".format(self.name))
+
 
 class LocalDirBackupSet(BackupSet):
     """A backup set of a single local directory tree.
@@ -520,17 +539,7 @@ class LocalDirBackupSet(BackupSet):
                 self._skip_entries])
         rsync_cmd_list.append(self._src_dir + "/")
         rsync_cmd_list.append(self._dst_dir)
-        logging.info("Making backup of set '{0}'".format(self.name))
-        logging.info("")
-        with subprocess.Popen(rsync_cmd_list, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, universal_newlines=True) as rsync_cmd:
-            while True:
-                out_data = rsync_cmd.stdout.readline()
-                if out_data == '':
-                    break;
-                logging.info(out_data.strip())
-        logging.info("")
-        logging.info("Finished backup of set '{0}'".format(self.name))
+        self.execute_command(rsync_cmd_list)
 
 
 class Backup:
