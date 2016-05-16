@@ -866,6 +866,17 @@ if __name__ == "__main__":
                 else:
                     skip_entries = None
                 backup.add_local_dir_set(name, src_dir, skip_entries)
+            elif (backup_set["type"] == "remote dir"):
+                name = backup_set["set-name"]
+                src_dir = backup_set["source-dir"]
+                remote_host = backup_set["remote-host"]
+                remote_shell = backup_set["remote-shell"]
+                if "skip-entries" in backup_set:
+                    skip_entries = backup_set["skip-entries"]
+                else:
+                    skip_entries = None
+                backup.add_remote_dir_set(name, src_dir, remote_host,
+                        remote_shell, skip_entries)
         backup.create(manager.find_latest_set)
     except BackupError as e:
         logging.error("Backup incomplete due to error:")
