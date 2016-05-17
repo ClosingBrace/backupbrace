@@ -581,7 +581,7 @@ class RemoteDirBackupSet(BackupSet):
         """Make the backup by synchronizing the backup directory with
         the filesystem.
         """
-        rsync_cmd_list = ["rsync", "-aAXhzs", "--delete", "--delete-excluded",
+        rsync_cmd_list = ["rsync", "-aXhzs", "--delete", "--delete-excluded",
                 "--numeric-ids", "--outbuf=Line", "--stats",
                 "--itemize-changes"]
         rsync_cmd_list.append("-e" + self._remote_shell)
