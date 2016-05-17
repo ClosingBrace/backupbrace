@@ -494,8 +494,17 @@ class BackupSet:
                 if out_data == '':
                     break;
                 logging.info(out_data.strip())
+            return_code = command.wait(timeout=10)
         logging.info("")
-        logging.info("Finished backup of set '{0}'".format(self.name))
+        if return_code == 0:
+            logging.info("Finished backup of set '{0}'".format(self.name))
+            logging.info("")
+        else:
+            logging.error("Error making backup of set '{0}' (error code: {1})".
+                    format(self.name, return_code))
+            logging.info("")
+            raise BackupError("{0} subprocess failed with return code {1}".
+                    format(command_list[0], return_code))
 
 
 class LocalDirBackupSet(BackupSet):
