@@ -720,6 +720,7 @@ class Backup:
         """
         logging.info("")
         for backup_set in self._sets:
+            logging.info("===================================================")
             copy_src = copy_source_finder(backup_set.name,
                     [BackupSet.States.CLONED, BackupSet.States.SYNCHRONIZING,
                         BackupSet.States.FINISHED])
