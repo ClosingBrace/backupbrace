@@ -17,8 +17,18 @@ are replaced by their source. This breaks the hardlink between the last
 and current backup, so that the file in the last backup is not changed.
 Files that did not change between the last backup and the current run,
 are left alone. The hardlink will stay intact.
+
+The program support optional command line arguments. The arguments
+supported are:
+-h, --help            show this help message and exit
+-v, --version         show program's version number and exit
+-c CONFFILE, --config CONFFILE
+                      the backup's configuration file
 """
 
+PROGRAM_VERSION = "0.1"
+
+import argparse
 import os
 from datetime import datetime
 
@@ -39,6 +49,21 @@ class Environment:
         object.
         """
         self.conf_file = "/etc/backupbrace.conf"
+        self._parse_command_line()
+
+    def _parse_command_line(self):
+        """Parse command line arguments.
+
+        The command line arguments that are parsed are added to the
+        parsing operating environment instance.
+        """
+        parser = argparse.ArgumentParser(
+                description="Make a backup of the system.")
+        parser.add_argument("-v", "--version", action="version",
+                version="%(prog)s v" + PROGRAM_VERSION)
+        parser.add_argument("-c", "--config", dest="conffile",
+                default=self.conf_file, help="the backup's configuration file")
+        parser.parse_args(namespace=self)
 
 
 if __name__ == "__main__":
