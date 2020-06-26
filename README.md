@@ -34,7 +34,19 @@ filesystem on which the backups are created must support inodes.
 
 ### Installation
 
-TODO
+The best way to install _backupbrace_ is to install it in a Python virtual environment using pip.
+With a symbolic link in a directory in the path to the `backupbrace` executable, the tool is also
+available without manually activating the virtual environment.
+
+1. First, clone the git repository into a local directory. Let's call this `git-dir`.
+2. Create a virtual environment where you want to install _backupbrace_  
+`python3 -m venv <install-dir>`
+3. Activate the virtual environment  
+`source <install-dir>/bin/activate`
+4. Install _backupbrace_ using pip  
+`pip install <git-dir>`
+5. Create a symbolic link in a directory on the path (here `/usr/local/sbin`)  
+`ln -s <install-dir>/bin/backupbrace /usr/local/sbin/backupbrace`
 
 ### Configuration
 
