@@ -858,7 +858,7 @@ class BackupManager:
                 pass
 
 
-if __name__ == "__main__":
+def run():
     env = Environment()
     if (env.conf_format):
         Configuration.print_configuration_format()
