@@ -1,30 +1,11 @@
-#!/usr/bin/python3
-"""Backup program.
-
-This program makes backups of a Linux system to a backup directory. The
-backup directory must be locally accessible to the backup program, and
-the backup directory must be located on a filesystem that supports
-inodes. Typically the backup directory is on a mounted USB harddisk.
-
-Each new backup is created as a subdirectory of the backup directory,
-where the timestamp of the backup start is used to name the
-subdirectory. A backup starts as a copy of the last backup. In this copy
-directories are created anew, but files are hardlinked with the file in
-last backup. After the copy, the backup's directory structure is
-synchronized with the source directory that it is to be a backup of.
-Files that changed between the last backup and the current backup run,
-are replaced by their source. This breaks the hardlink between the last
-and current backup, so that the file in the last backup is not changed.
-Files that did not change between the last backup and the current run,
-are left alone. The hardlink will stay intact.
-
-The program support optional command line arguments. The arguments
-supported are:
--h, --help            show this help message and exit
--v, --version         show program's version number and exit
--c CONFFILE, --config CONFFILE
-                      the backup's configuration file
-"""
+# Backupbrace
+# A script to create backups of a Linux system.
+#
+# Copyright (c) 2015-2020 Hans Vredeveld
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 PROGRAM_VERSION = "0.2"
 
