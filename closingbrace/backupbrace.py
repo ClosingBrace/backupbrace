@@ -8,8 +8,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import sys
-from closingbrace.backup import BackupManager
 from closingbrace.backuperror import BackupError
+from closingbrace.backupmanager import BackupManager
 from closingbrace.configuration import Configuration
 from closingbrace.environment import Environment
 
