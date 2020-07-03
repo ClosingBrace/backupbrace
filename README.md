@@ -136,6 +136,9 @@ The optional arguments are:
 
 ## Changes / History
 
+**v1.0.0 (05-jul-2020)**
+The application uses pip for installation and dependency management.
+
 **v0.2.0 (21-may-2016)**
 Next to making backups of local directories, the application can now make backups of remote
 directories that are accessible via a remote shell like ssh.
