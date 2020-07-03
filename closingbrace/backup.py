@@ -10,12 +10,9 @@
 import json
 import logging
 import os
-import sys
 from closingbrace.backuperror import BackupError
 from closingbrace.backupset import BackupSet
 from closingbrace.backupset import LocalDirBackupSet, RemoteDirBackupSet
-from closingbrace.configuration import Configuration
-from closingbrace.environment import Environment
 from closingbrace.jsoncoders import TimestampEncoder, decode_state_json
 from datetime import datetime
 
@@ -273,39 +270,3 @@ class BackupManager:
             except BackupError:
                 # skip directory when it is not a backup
                 pass
-
-
-def run():
-    env = Environment()
-    if (env.conf_format):
-        Configuration.print_configuration_format()
-        sys.exit(0)
-    try:
-        conf = Configuration(env.conffile)
-        manager = BackupManager(conf.get_param("backup-dir"))
-        backup = manager.new_backup()
-        for backup_set in conf.get_param("backup-sets"):
-            if (backup_set["type"] == "local dir"):
-                name = backup_set["set-name"]
-                src_dir = backup_set["source-dir"]
-                if "skip-entries" in backup_set:
-                    skip_entries = backup_set["skip-entries"]
-                else:
-                    skip_entries = None
-                backup.add_local_dir_set(name, src_dir, skip_entries)
-            elif (backup_set["type"] == "remote dir"):
-                name = backup_set["set-name"]
-                src_dir = backup_set["source-dir"]
-                remote_host = backup_set["remote-host"]
-                remote_shell = backup_set["remote-shell"]
-                if "skip-entries" in backup_set:
-                    skip_entries = backup_set["skip-entries"]
-                else:
-                    skip_entries = None
-                backup.add_remote_dir_set(name, src_dir, remote_host,
-                        remote_shell, skip_entries)
-        backup.create(manager.find_latest_set)
-    except BackupError as e:
-        logging.error("Backup incomplete due to error:")
-        logging.error("  {0}".format(e))
-        sys.exit(1)

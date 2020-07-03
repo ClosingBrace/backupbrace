@@ -39,7 +39,7 @@ setup(
     install_requires=['python-dateutil'],
     entry_points={
         'console_scripts': [
-            'backupbrace=closingbrace.backup:run',
+            'backupbrace=closingbrace.backupbrace:run',
         ],
     },
     zip_safe=False,
