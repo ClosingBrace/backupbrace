@@ -43,5 +43,6 @@ class Environment:
         parser.add_argument("-v", "--version", action="version",
                 version="%(prog)s v" + PROGRAM_VERSION)
         parser.add_argument("-c", "--config", dest="conffile",
-                default=self.conf_file, help="the backup's configuration file")
+                default=self.conf_file, help="the backup's configuration file "
+                "(default: /etc/backupbrace.conf)")
         parser.parse_args(namespace=self)
