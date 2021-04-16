@@ -12,6 +12,7 @@ from closingbrace.backuperror import BackupError
 from closingbrace.backupmanager import BackupManager
 from closingbrace.configuration import Configuration
 from closingbrace.environment import Environment
+from os import path
 
 def create_backup(backup_dir, backup_sets):
     """Create a backup of backup_sets in backup_dir.
@@ -55,8 +56,9 @@ def run():
         sys.exit(0)
     try:
         conf = Configuration(env.conffile)
-        create_backup(conf.get_param("backup-dir"),
-                conf.get_param("backup-sets"))
+        backup_dir = conf.get_param("backup-dir")
+        if path.isdir(backup_dir):
+            create_backup(backup_dir, conf.get_param("backup-sets"))
     except BackupError as e:
         logging.error("Backup incomplete due to error:")
         logging.error("  {0}".format(e))
