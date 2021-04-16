@@ -56,9 +56,10 @@ def run():
         sys.exit(0)
     try:
         conf = Configuration(env.conffile)
-        backup_dir = conf.get_param("backup-dir")
-        if path.isdir(backup_dir):
-            create_backup(backup_dir, conf.get_param("backup-sets"))
+        backup_dirs = conf.get_param("backup-dirs")
+        for backup_dir in backup_dirs:
+            if path.isdir(backup_dir):
+                create_backup(backup_dir, conf.get_param("backup-sets"))
     except BackupError as e:
         logging.error("Backup incomplete due to error:")
         logging.error("  {0}".format(e))
