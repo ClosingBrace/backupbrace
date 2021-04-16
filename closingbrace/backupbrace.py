@@ -1,7 +1,7 @@
 # Backupbrace
 # A script to create backups of a Linux system.
 #
-# Copyright (c) 2015-2020 Hans Vredeveld
+# Copyright (c) 2015-2021 Hans Vredeveld
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,6 +12,42 @@ from closingbrace.backuperror import BackupError
 from closingbrace.backupmanager import BackupManager
 from closingbrace.configuration import Configuration
 from closingbrace.environment import Environment
+from os import path
+
+def create_backup(backup_dir, backup_sets):
+    """Create a backup of backup_sets in backup_dir.
+
+    Args:
+        backup_dir : The base directory to write the backup to.
+        backup_sets: The backup sets to make a backup of.
+
+    Raises:
+        BackupError: When there was an error creating the backup.
+    """
+    manager = BackupManager(backup_dir)
+    backup = manager.new_backup()
+    for backup_set in backup_sets:
+        if (backup_set["type"] == "local dir"):
+            name = backup_set["set-name"]
+            src_dir = backup_set["source-dir"]
+            if "skip-entries" in backup_set:
+                skip_entries = backup_set["skip-entries"]
+            else:
+                skip_entries = None
+            backup.add_local_dir_set(name, src_dir, skip_entries)
+        elif (backup_set["type"] == "remote dir"):
+            name = backup_set["set-name"]
+            src_dir = backup_set["source-dir"]
+            remote_host = backup_set["remote-host"]
+            remote_shell = backup_set["remote-shell"]
+            if "skip-entries" in backup_set:
+                skip_entries = backup_set["skip-entries"]
+            else:
+                skip_entries = None
+            backup.add_remote_dir_set(name, src_dir, remote_host,
+                    remote_shell, skip_entries)
+    backup.create(manager.find_latest_set)
+
 
 def run():
     env = Environment()
@@ -20,29 +56,10 @@ def run():
         sys.exit(0)
     try:
         conf = Configuration(env.conffile)
-        manager = BackupManager(conf.get_param("backup-dir"))
-        backup = manager.new_backup()
-        for backup_set in conf.get_param("backup-sets"):
-            if (backup_set["type"] == "local dir"):
-                name = backup_set["set-name"]
-                src_dir = backup_set["source-dir"]
-                if "skip-entries" in backup_set:
-                    skip_entries = backup_set["skip-entries"]
-                else:
-                    skip_entries = None
-                backup.add_local_dir_set(name, src_dir, skip_entries)
-            elif (backup_set["type"] == "remote dir"):
-                name = backup_set["set-name"]
-                src_dir = backup_set["source-dir"]
-                remote_host = backup_set["remote-host"]
-                remote_shell = backup_set["remote-shell"]
-                if "skip-entries" in backup_set:
-                    skip_entries = backup_set["skip-entries"]
-                else:
-                    skip_entries = None
-                backup.add_remote_dir_set(name, src_dir, remote_host,
-                        remote_shell, skip_entries)
-        backup.create(manager.find_latest_set)
+        backup_dirs = conf.get_param("backup-dirs")
+        for backup_dir in backup_dirs:
+            if path.isdir(backup_dir):
+                create_backup(backup_dir, conf.get_param("backup-sets"))
     except BackupError as e:
         logging.error("Backup incomplete due to error:")
         logging.error("  {0}".format(e))

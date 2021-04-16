@@ -1,7 +1,7 @@
 # Backupbrace
 # A script to create backups of a Linux system.
 #
-# Copyright (c) 2015-2020 Hans Vredeveld
+# Copyright (c) 2015-2021 Hans Vredeveld
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@ class Configuration:
 
     The configuration is read from a json-configuration file. This
     configuration file is versioned. The program only supports
-    configuration files in the version 2.0 format.
+    configuration files in the version 3.0 format.
 
     Attributes:
         version_major (str): The major part of the configuration's
@@ -94,11 +94,11 @@ class Configuration:
             BackupError: When the configuration format version is not
                          supported.
         """
-        if (int(self.version_major) == 2) and (int(self.version_minor) >= 0):
+        if (int(self.version_major) == 3) and (int(self.version_minor) >= 0):
             # We have a supported version
             return
         raise BackupError("Configuration file format not supported. Found "
-                "version {0}, only supporting versions 2.x".
+                "version {0}, only supporting versions 3.x".
                 format(self._configuration["version"]))
 
     @classmethod
@@ -108,17 +108,20 @@ class Configuration:
         print(textwrap.dedent("""\
             The configuration for the backup program is stored in a JSON-file.
             The file is versioned. This version of the program uses version
-            2.0 of the configuration file. It is also compatible with any other
-            2.x version of the configuration file.
+            3.0 of the configuration file. It is also compatible with any other
+            3.x version of the configuration file.
 
-            Version 2.0 supports the backup of local and remote files and
-            directories to a local backup directory.
+            Version 3.0 supports the backup of local and remote files and
+            directories to one or more local backup directories.
 
-            A sample version 2.0 configuration file looks as follows:
+            A sample version 3.0 configuration file looks as follows:
 
                 {
-                   "version": "2.0",
-                   "backup-dir": "/path/to/backup/dir",
+                   "version": "3.0",
+                   "backup-dirs": [
+                      "/path/to/backup/dir_1",
+                      "/path/to/backup/dir_2"
+                   ],
                    "backup-sets": [
                       {
                          "set-name": "set_1",
@@ -147,10 +150,11 @@ class Configuration:
 
             The configuration is contained in a single, unnamed JSON object. The
             object contains the following name/value pairs:
-            - `version`    : The string "2.0".
-            - `backup-dir` : A string that contains the base directory where the
-                             backups will go. This directory must exist prior to
-                             the execution of the backup program.
+            - `version`    : The string "3.0".
+            - `backup-dirs`: An array of strings that contains the base
+                             directories where the backups will go. When a
+                             directory does not exist, the backup to that
+                             directory will be skipped silently.
             - `backup-sets`: An array of backup sets.
 
             The backup sets are objects that contain the following name/value
