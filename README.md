@@ -96,16 +96,16 @@ name/value pairs:
 * **version** The string "2.0".
 * **backup-dir** A string that contains the base directory where the backups will go. This directory
                  must exist prior to the execution of the backup program.
-* **backup-sets**: An array of backup sets.
+* **backup-sets** An array of backup sets.
 
 The backup sets are objects that contain the following name/value pairs:
 
 * **set-name** A string identifying the backup set. This set name will be used to create a
                subdirectory in `backup-dir`.
 * **type** The type of backup, either "local dir" or "remote dir".
-* **remote-shell**: (only when `type` is "remote dir") The remote shell to use for connecting with
-                    the remote host. The string includes the options that the remote shell needs to
-                    connect to the remote host.
+* **remote-shell** (only when `type` is "remote dir") The remote shell to use for connecting with
+                   the remote host. The string includes the options that the remote shell needs to
+                   connect to the remote host.
 * **remote-host** (only when `type` is "remote dir") The remote host to connect to. This can include
                   a remote user (with the syntax "\<user\>@\<host\>") that the remote rsync process
                   will use to execute its task.
