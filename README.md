@@ -140,6 +140,9 @@ The optional arguments are:
 
 ## Changes / History
 
+**v1.1.0 (16-apr-2021)**
+The application supports multiple backup destination directories.
+
 **v1.0.0 (05-jul-2020)**
 The application uses pip for installation and dependency management.
 
